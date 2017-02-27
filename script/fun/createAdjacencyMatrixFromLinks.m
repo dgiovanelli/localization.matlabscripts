@@ -1,4 +1,4 @@
-function S = createNetworkMatrixFromLinks(links,options)
+function S = createAdjacencyMatrixFromLinks(links,options)
 
 availableIDs = unique(cell2mat(links.IDrx)); %it should be already ordered!
 

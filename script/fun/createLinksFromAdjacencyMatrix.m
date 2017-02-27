@@ -1,4 +1,4 @@
-function links = createLinksFromNetworkMatrix(S,options)
+function links = createLinksFromAdjacencyMatrix(S,options)
 
 availableIDs = sort( S.IDs );
 
