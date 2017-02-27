@@ -1,4 +1,4 @@
-function [packets, tags] = extractPacketsFromFile(fileID)
+function [packets, tags] = extractPacketsFromFile(fileID,options)
 
 %% Format string for each line of text:
 % For more information, see the TEXTSCAN documentation.
@@ -24,11 +24,6 @@ data_type = dataArray{:, 10};
 packet_rssi = dataArray{:, 11};
 packet_payload = dataArray{:, 12};
 
-
-ADV_TYPE_IDENTIFIER = 'ADV';
-GATT_TYPE_IDENTIFIER = 'GATT';
-TAG_TYPE_IDENTIFIER = 'TAG';
-
 packets.timestamp = zeros(size(year,1),1);
 packets.payload = cell(size(year,1),1);
 packets.type = cell(size(year,1),1);
@@ -40,12 +35,12 @@ tags.type = cell(size(year,1),1);
 packetsIdx = 1; % this index is increased only if the data_type is of a used type
 tagIdx = 1; % this index is increased only if the data_type is of a used type
 for packetNo = 1:size(year,1)
-    if strcmp(data_type(packetNo),ADV_TYPE_IDENTIFIER) || strcmp(data_type(packetNo),GATT_TYPE_IDENTIFIER)
+    if strcmp(data_type(packetNo),options.ADV_TYPE_IDENTIFIER) || strcmp(data_type(packetNo),options.GATT_TYPE_IDENTIFIER)
         packets.timestamp(packetsIdx) = ticks(packetNo);
         packets.payload(packetsIdx) = packet_payload(packetNo);
         packets.type(packetsIdx) = data_type(packetNo);
         packetsIdx = packetsIdx + 1;
-    elseif strcmp(data_type(packetNo),TAG_TYPE_IDENTIFIER)
+    elseif strcmp(data_type(packetNo),options.TAG_TYPE_IDENTIFIER)
         tags.timestamp(tagIdx) = ticks(packetNo);
         tags.payload(tagIdx) = packet_payload(packetNo);
         tags.type(tagIdx) = data_type(packetNo);

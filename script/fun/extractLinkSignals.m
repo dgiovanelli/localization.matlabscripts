@@ -1,22 +1,13 @@
-function links = extractLinkSignals(packets)
-%length of fields in the ble raw packet. NB: each byte occupy two characters when converted in hex
-ID_LENGTH_BYTE = 1;
-STATE_LENGTH_BYTE = 1;
-BATTERY_VOLTAGE_LENGTH_BYTE = 2;
-COUNTER_LENGTH_BYTE = 1;
-RSSI_LENGTH_BYTE = 1;
-
-ADV_TYPE_IDENTIFIER = 'ADV';
-GATT_TYPE_IDENTIFIER = 'GATT';
+function links = extractLinkSignals(packets,options)
 
 %%DISCOVER ALL IDS
 availableIDs = zeros(5,1);
 availableIDsIdx = 1;
 for packetIdx = 1:size(packets.timestamp,1)
-    if strcmp( packets.type(packetIdx) ,ADV_TYPE_IDENTIFIER )
+    if strcmp( packets.type(packetIdx) , options.ADV_TYPE_IDENTIFIER )
         %check the receiver ID
         IDrx = sscanf(packets.payload{packetIdx}(1:2),'%x'); %read the ID of the receiver (i.e. the owner of this packet)
-        if isValidRxID(IDrx)
+        if isValidRxID(IDrx,options)
             if findID(IDrx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
                 if availableIDsIdx == size(availableIDs,1) %resize availableIDs
                     availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
@@ -27,78 +18,119 @@ for packetIdx = 1:size(packets.timestamp,1)
         end
         %check the neighbors IDs
         packetUnderFocus = packets.payload{packetIdx};
-        for idx = (1 + ID_LENGTH_BYTE*2 + STATE_LENGTH_BYTE*2):RSSI_LENGTH_BYTE*2+ID_LENGTH_BYTE*2:size(packetUnderFocus,2) - (BATTERY_VOLTAGE_LENGTH_BYTE*2 + COUNTER_LENGTH_BYTE*2)
-            IDtx = sscanf( packetUnderFocus(idx:idx+(ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
-            if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
+        startIdx = (1 + options.ID_LENGTH_BYTE*2 + options.STATE_LENGTH_BYTE*2);
+        increment = options.RSSI_LENGTH_BYTE*2+options.ID_LENGTH_BYTE*2;
+        stopIdx = size(packetUnderFocus,2) - (options.BATTERY_VOLTAGE_LENGTH_BYTE*2 + options.COUNTER_LENGTH_BYTE*2);
+        for idx = startIdx:increment:stopIdx
+            IDtx = sscanf( packetUnderFocus(idx:idx+(options.ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
+            if isValidRxID(IDtx,options)
+                if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
+                    if availableIDsIdx == size(availableIDs,1) %resize availableIDs
+                        availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
+                    end
+                    availableIDs(availableIDsIdx,1) = IDtx;
+                    availableIDsIdx = availableIDsIdx + 1;
+                end
+            end
+        end
+    elseif strcmp( packets.type(packetsIdx) ,options.GATT_TYPE_IDENTIFIER )
+        % Repeat for gatt packets received through the master node - not checked for errors
+        IDrx = options.MASTER_NODE_FIXED_ID; %TODO:set a value for MASTER_NODE_FIXED_ID
+        if isValidRxID(IDrx,options)
+            if findID(IDrx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
                 if availableIDsIdx == size(availableIDs,1) %resize availableIDs
                     availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
                 end
-                availableIDs(availableIDsIdx,1) = IDtx;
+                availableIDs(availableIDsIdx,1) = IDrx;
                 availableIDsIdx = availableIDsIdx + 1;
             end
         end
-    elseif strcmp( packets.type(packetsIdx) ,GATT_TYPE_IDENTIFIER )
-        %check the neighbors IDs - not checked for errors
         packetUnderFocus = packets.payload{packetIdx};
-        for idx = 1:RSSI_LENGTH_BYTE*2+STATE_LENGTH_BYTE*2+ID_LENGTH_BYTE*2:size(packets.payload{packetIdx},2)
-            IDtx = sscanf( packetUnderFocus(idx:idx+(ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
-            if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
-                if availableIDsIdx == size(availableIDs,1) %resize availableIDs
-                    availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
+        startIdx = 1;
+        increment = options.RSSI_LENGTH_BYTE*2+options.STATE_LENGTH_BYTE*2+options.ID_LENGTH_BYTE*2;
+        stopIdx = size(packets.payload{packetIdx},2);
+        for idx = startIdx:increment:stopIdx
+            IDtx = sscanf( packetUnderFocus(idx:idx+(options.ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
+            if isValidRxID(IDtx,options)
+                if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
+                    if availableIDsIdx == size(availableIDs,1) %resize availableIDs
+                        availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
+                    end
+                    availableIDs(availableIDsIdx,1) = IDtx;
+                    availableIDsIdx = availableIDsIdx + 1;
                 end
-                availableIDs(availableIDsIdx,1) = IDtx;
-                availableIDsIdx = availableIDsIdx + 1;
             end
         end
     end
 end
 availableIDs = availableIDs(1:availableIDsIdx-1,1);
+%sort IDs, they will be always in the same order to make things easier
+availableIDs = sort(availableIDs);
 
 N = size(availableIDs,1);
 noOfLinks = N^2; %this consider all links
 
 %%GET THE RSSI SIGNAL FOR EACH ID PAIR
-links.IDrx = zeros(noOfLinks,1);
-links.IDtx = zeros(noOfLinks,1);
-links.rssiSignal = cell(noOfLinks,1);
-links.timestamp = cell(noOfLinks,1);
+links.IDrx = cell(noOfLinks,1);
+links.IDtx = cell(noOfLinks,1);
+links.rawSignal.rssi = cell(noOfLinks,1);
+links.rawSignal.timestamp = cell(noOfLinks,1);
 
 for packetIdx = 1:size(packets.timestamp,1)
-    if strcmp( packets.type(packetIdx) ,ADV_TYPE_IDENTIFIER )
+    if strcmp( packets.type(packetIdx), options.ADV_TYPE_IDENTIFIER )
         %get the receiver ID and its index in availableIDs
         IDrx = sscanf(packets.payload{packetIdx}(1:2),'%x'); %read the ID of the receiver (i.e. the owner of this packet)
-        rxIdx = findID(IDrx, availableIDs);     
-        packetUnderFocus = packets.payload{packetIdx};
-        for idx = (1 + ID_LENGTH_BYTE*2 + STATE_LENGTH_BYTE*2):RSSI_LENGTH_BYTE*2+ID_LENGTH_BYTE*2:size(packetUnderFocus,2) - (BATTERY_VOLTAGE_LENGTH_BYTE*2 + COUNTER_LENGTH_BYTE*2)
-            IDtx = sscanf( packetUnderFocus(idx:idx+(ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
-            txIdx = findID(IDtx, availableIDs);
-            linkIdx = rxIdx + (txIdx-1)*N;
-            
-            links.IDrx(linkIdx) = IDrx; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
-            links.IDtx(linkIdx) = IDtx; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
-            rssiValue = double( typecast( uint8(sscanf(packetUnderFocus(idx+(ID_LENGTH_BYTE*2):idx+(ID_LENGTH_BYTE*2)+(RSSI_LENGTH_BYTE*2)-1),'%x')) ,'int8') );
-            links.rssiSignal{linkIdx} = cat(1,links.rssiSignal{linkIdx},rssiValue);
-            links.timestamp{linkIdx} = cat(1,links.timestamp{linkIdx},packets.timestamp(packetIdx));
-            if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
-                if availableIDsIdx == size(availableIDs,1) %resize availableIDs
-                    availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
+        rxIdx = findID(IDrx, availableIDs);
+        if rxIdx ~= 0
+            packetUnderFocus = packets.payload{packetIdx};        
+            startIdx = (1 + options.ID_LENGTH_BYTE*2 + options.STATE_LENGTH_BYTE*2);
+            increment = options.RSSI_LENGTH_BYTE*2+options.ID_LENGTH_BYTE*2;
+            stopIdx = size(packetUnderFocus,2) - (options.BATTERY_VOLTAGE_LENGTH_BYTE*2 + options.COUNTER_LENGTH_BYTE*2);
+            for idx = startIdx:increment:stopIdx
+                IDtx = sscanf( packetUnderFocus(idx:idx+(options.ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
+                txIdx = findID(IDtx, availableIDs);
+                if txIdx ~= 0
+                    linkIdx = rxIdx + (txIdx-1)*N;
+                    
+                    links.IDrx(linkIdx) = {IDrx}; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
+                    links.IDtx(linkIdx) = {IDtx}; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
+                    rssiValue = double( typecast( uint8(sscanf(packetUnderFocus(idx+(options.ID_LENGTH_BYTE*2):idx+(options.ID_LENGTH_BYTE*2)+(options.RSSI_LENGTH_BYTE*2)-1),'%x')) ,'int8') );
+                    if isValidRssi(rssiValue,options)
+                        links.rawSignal.rssi{linkIdx} = cat(1,links.rawSignal.rssi{linkIdx},rssiValue);
+                        links.rawSignal.timestamp{linkIdx} = cat(1,links.rawSignal.timestamp{linkIdx},packets.timestamp(packetIdx));
+                    end
                 end
-                availableIDs(availableIDsIdx,1) = IDtx;
-                availableIDsIdx = availableIDsIdx + 1;
             end
+            %the next is correct! it adds the IDrx and IDtx values for links where rx and tx are the same node, otherwise the IDrx and IDtx equals [] leading to possible confusion
+            linkIdx = rxIdx + (rxIdx-1)*N;
+            links.IDrx(linkIdx) = {IDrx};
+            links.IDtx(linkIdx) = {IDrx};
         end
     elseif strcmp( packets.type(packetsIdx) ,GATT_TYPE_IDENTIFIER )
-%         %check the neighbors IDs - not checked for errors
-%         packetUnderFocus = packets.payload{packetIdx};
-%         for idx = 1:RSSI_LENGTH_BYTE*2+STATE_LENGTH_BYTE*2+ID_LENGTH_BYTE*2:size(packets.payload{packetIdx},2)
-%             IDtx = sscanf( packetUnderFocus(idx:idx+(ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
-%             if findID(IDtx, availableIDs) == 0 %check if the ID is already in availableIDs, if not add it
-%                 if availableIDsIdx == size(availableIDs,1) %resize availableIDs
-%                     availableIDs = cat(1, availableIDs, zeros(size(availableIDs)) ); %double the dimension every time it reach the end
-%                 end
-%                 availableIDs(availableIDsIdx,1) = IDtx;
-%                 availableIDsIdx = availableIDsIdx + 1;
-%             end
-%         end
+        % Repeat for gatt packets received through the master node - not checked for errors
+        IDrx = MASTER_NODE_FIXED_ID;
+        rxIdx = findID(IDrx, availableIDs);
+        if rxIdx ~= 0
+            packetUnderFocus = packets.payload{packetIdx};
+            for idx = 1:RSSI_LENGTH_BYTE*2+STATE_LENGTH_BYTE*2+ID_LENGTH_BYTE*2:size(packets.payload{packetIdx},2)
+                IDtx = sscanf( packetUnderFocus(idx:idx+(ID_LENGTH_BYTE*2)-1) ,'%x');    %read the ID of the neighbor
+                txIdx = findID(IDtx, availableIDs);
+                if txIdx ~= 0
+                    linkIdx = rxIdx + (txIdx-1)*N;
+                    
+                    links.IDrx(linkIdx) = {IDrx}; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
+                    links.IDtx(linkIdx) = {IDtx}; %this is overwritten (with the same value) every time a sample for the link between IDrx and IDtx is found
+                    rssiValue = double( typecast( uint8(sscanf(packetUnderFocus(idx+(ID_LENGTH_BYTE*2):idx+(ID_LENGTH_BYTE*2)+(RSSI_LENGTH_BYTE*2)-1),'%x')) ,'int8') );
+                    if isValidRssi(rssiValue)
+                        links.rawSignal.rssi{linkIdx} = cat(1,links.rawSignal.rssi{linkIdx},rssiValue);
+                        links.rawSignal.timestamp{linkIdx} = cat(1,links.rawSignal.timestamp{linkIdx},packets.timestamp(packetIdx));
+                    end
+                end
+            end
+            %the next is correct! it adds the IDrx and IDtx values for links where rx and tx are the same node, otherwise the IDrx and IDtx equals [] leading to possible confusion
+            linkIdx = rxIdx + (rxIdx-1)*N;
+            links.IDrx(linkIdx) = {IDrx};
+            links.IDtx(linkIdx) = {IDrx};
+        end
     end
 end
