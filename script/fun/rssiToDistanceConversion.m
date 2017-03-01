@@ -1,11 +1,17 @@
-function [rawSignalDistance, windowedSignalDistance] = rssiToDistanceConversion(links,options)
+function links = rssiToDistanceConversion(links,options)
 
 noOfLinks = size(links.IDrx,1);
 
-rawSignalDistance = cell(noOfLinks,1);
-windowedSignalDistance = cell(noOfLinks,1);
+if isfield(links,'rawSignal')
+    links.rawSignal.distance = cell(noOfLinks,1);
+    for linkNo = 1:noOfLinks
+        links.rawSignal.distance{linkNo} = rssiToDistanceModel(links.rawSignal.rssi{linkNo},options);
+    end
+end
 
-for linkNo = 1:noOfLinks
-    rawSignalDistance{linkNo} = rssiToDistanceModel(links.rawSignal.rssi{linkNo},options);
-    windowedSignalDistance{linkNo} = rssiToDistanceModel(links.windowedSignal.rssi{linkNo},options);
+if isfield(links,'windowedSignal')
+    links.windowedSignal.distance = cell(noOfLinks,1);
+    for linkNo = 1:noOfLinks
+        links.windowedSignal.distance{linkNo} = rssiToDistanceModel(links.windowedSignal.rssi{linkNo},options);
+    end
 end

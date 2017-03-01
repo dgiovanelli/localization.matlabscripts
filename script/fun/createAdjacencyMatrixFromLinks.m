@@ -1,5 +1,5 @@
 function S = createAdjacencyMatrixFromLinks(links,options)
-
+%TODO: APPLY IT ON WINDOWED OR DECIMATED SIGNALS?
 availableIDs = unique(cell2mat(links.IDrx)); %it should be already ordered!
 
 N = size(availableIDs,1);

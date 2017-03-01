@@ -33,7 +33,7 @@ for packetIdx = 1:size(packets.timestamp,1)
                 end
             end
         end
-    elseif strcmp( packets.type(packetsIdx) ,options.GATT_TYPE_IDENTIFIER )
+    elseif strcmp( packets.type(packetIdx) ,options.GATT_TYPE_IDENTIFIER )
         % Repeat for gatt packets received through the master node - not checked for errors
         IDrx = options.MASTER_NODE_FIXED_ID; %TODO:set a value for MASTER_NODE_FIXED_ID
         if isValidRxID(IDrx,options)
@@ -106,7 +106,7 @@ for packetIdx = 1:size(packets.timestamp,1)
             links.IDrx(linkIdx) = {IDrx};
             links.IDtx(linkIdx) = {IDrx};
         end
-    elseif strcmp( packets.type(packetsIdx) ,GATT_TYPE_IDENTIFIER )
+    elseif strcmp( packets.type(packetIdx) ,options.GATT_TYPE_IDENTIFIER )
         % Repeat for gatt packets received through the master node - not checked for errors
         IDrx = MASTER_NODE_FIXED_ID;
         rxIdx = findID(IDrx, availableIDs);

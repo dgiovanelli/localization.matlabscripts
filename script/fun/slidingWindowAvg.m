@@ -1,12 +1,14 @@
-function windowedSignal = slidingWindowAvg(rawSignal, options)
+function links = slidingWindowAvg(links, options)
 
 wsize = options.WSIZE_S*1000;
 winc = options.WINC_S*1000;
 
+rawSignal = links.rawSignal;
+
 noOfLinks = size(rawSignal.rssi,1);
 
-windowedSignal.rssi = cell(noOfLinks,1);
-windowedSignal.timestamp = cell(noOfLinks,1);
+links.windowedSignal.rssi = cell(noOfLinks,1);
+links.windowedSignal.timestamp = cell(noOfLinks,1);
 
 startTimestamp = min(cell2mat(rawSignal.timestamp));
 endTimestamp = max(cell2mat(rawSignal.timestamp));
@@ -20,11 +22,11 @@ for linkNo = 1:noOfLinks
             meanRssi = NaN;
         end
         %mean of the two signals
-        windowedSignal.rssi{linkNo} = cat(1, windowedSignal.rssi{linkNo}, meanRssi );
+        links.windowedSignal.rssi{linkNo} = cat(1, links.windowedSignal.rssi{linkNo}, meanRssi );
                
         actT = actT + winc;
         %timestamp (with constant dt). s
-        windowedSignal.timestamp{linkNo} = cat(1, windowedSignal.timestamp{linkNo}, actT );
+        links.windowedSignal.timestamp{linkNo} = cat(1, links.windowedSignal.timestamp{linkNo}, actT );
     end
 end
 
