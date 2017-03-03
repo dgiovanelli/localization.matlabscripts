@@ -1,10 +1,10 @@
-%where are the files
+% where are the files
 options.LOG_FILE_PATH = {
                       '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.9.35.txt'; %1m alligned
                       '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.10.32.txt';
                       
-                      '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.11.34.txt'; %1m allignedInv
-                      '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.12.23.txt';                      
+                     '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.11.34.txt'; %1m allignedInv
+                     '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.12.23.txt';                      
                       
                       '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.13.22.txt'; %1m radialExt
                       '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.14.10.txt';
@@ -69,7 +69,7 @@ options.GROUND_TRUTH_FILE_PATH =  {
                       '..\input\LOG\MUSE_21_02_2016\LOGS\GROUND_TRUTH\groundTruth_radialInt_3m.mat';
                       
                       
-                      
+                      %'..\output\groundTruth_9m_auto.mat'; %9m alligned auto generated script
                       '..\input\LOG\MUSE_21_02_2016\LOGS\GROUND_TRUTH\groundTruth_alligned_9m.mat'; %9m alligned
                       '..\input\LOG\MUSE_21_02_2016\LOGS\GROUND_TRUTH\groundTruth_alligned_9m.mat';
                       
@@ -109,11 +109,22 @@ options.TX_PWR_10M = -67.3450;
 options.WSIZE_S = 2;
 options.WINC_S  = 0.5;
 
-options.NUMBER_OF_RANOMLY_CHOSEN_FIGURE_TO_PLOT = 5;
+options.NUMBER_OF_RANOMLY_CHOSEN_FIGURE_TO_PLOT = 0;
+options.FILES_INDEXES_TO_PLOT = [7,15,23]; %set this to empty to plot only one (randomly chosen) file.
+if size(options.FILES_INDEXES_TO_PLOT,2) > size(options.LOG_FILE_PATH,1)
+    warning('size(options.FILES_INDEXES_TO_PLOT,2) > size(options.LOG_FILE_PATH,1)');
+    options.FILES_INDEXES_TO_PLOT = [];
+end
 
 options.DECIMATION_FACTOR = 10; 
 if options.DECIMATION_FACTOR < 1
     warning('Decimation factor shall be < 1');
 end
 
-options.VERBOSITY_LEVEL = 1;
+options.VERBOSITY_LEVEL = 10;
+
+options.RAD_TO_DEF_CONST = 180/pi;
+options.DEG_TO_RAD_CONST = 1/options.RAD_TO_DEF_CONST;
+
+options.RSSI_AXIS_MIN_VALUE = -110;
+options.RSSI_AXIS_MAX_VALUE = 0;

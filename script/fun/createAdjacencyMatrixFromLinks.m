@@ -7,6 +7,7 @@ noOfTimeSamples = size(links.windowedSignal.timestamp{1},1);
 
 S.rssi = -Inf*ones(N,N,noOfTimeSamples);
 S.distance = Inf*ones(N,N,noOfTimeSamples);
+S.orientation =  Inf*ones(N,noOfTimeSamples);
 S.timestamp = links.windowedSignal.timestamp{1};
 S.IDs = availableIDs;
 
@@ -16,5 +17,6 @@ for rxIdx = 1:N
         S.rssi(rxIdx,txIdx,:) = links.windowedSignal.rssi{linkIdx};
         S.distance(rxIdx,txIdx,:) = links.windowedSignal.distance{linkIdx};
     end
+    S.orientation(rxIdx,:) = links.windowedSignal.rxNodeOrientation{linkIdx};
 end
 
