@@ -9,7 +9,7 @@ if options.VERBOSITY_LEVEL > 2
     else
         fileToPlot = options.FILES_INDEXES_TO_PLOT;
     end
-
+    
     for fileIdxToPlot = fileToPlot
         
         if isfield(file{fileIdxToPlot},'links') %print links data
@@ -159,7 +159,7 @@ if options.VERBOSITY_LEVEL > 2
         
         if isfield(file{fileIdxToPlot},'positionMatrix')
             
-            distances = file{fileIdxToPlot}.positionMatrix.valuesOfDistance;
+            distances = file{fileIdxToPlot}.positionMatrix.networkPoV.valuesOfDistance;
             distances = distances(distances ~= 0);
             
             for distanceIdx = 1:size(distances,1)
@@ -174,19 +174,19 @@ if options.VERBOSITY_LEVEL > 2
                 figure(1234*fileIdxToPlot+distanceIdx);
                 hold on
                 noOfAlreadyPlottedSamples = 0;
-                for AoAIdx = 1 : size(positionMatrix.valuesOfAnglesOfArrivals,1)
-                    for AoDIdx = 1 : size(positionMatrix.valuesOfAnglesOfDepartures,1)
-                        rssiSamples = positionMatrix.rssi.value{positionMatrix.valuesOfDistance == distances(distanceIdx),AoAIdx,AoDIdx};
+                for AoAIdx = 1 : size(positionMatrix.networkPoV.valuesOfAnglesOfArrivals,1)
+                    for AoDIdx = 1 : size(positionMatrix.networkPoV.valuesOfAnglesOfDepartures,1)
+                        rssiSamples = positionMatrix.networkPoV.rssi.values{positionMatrix.networkPoV.valuesOfDistance == distances(distanceIdx),AoAIdx,AoDIdx};
                         if ~isempty(rssiSamples)
                             noOfValidSamples = size(rssiSamples,1);
                             xaxis = (noOfAlreadyPlottedSamples+1:1:noOfAlreadyPlottedSamples+noOfValidSamples)';
                             plot(xaxis, rssiSamples,'.');
-                            anglesText = sprintf('AoA: %.0f\nAoD: %.0f',positionMatrix.valuesOfAnglesOfArrivals(AoAIdx)*options.RAD_TO_DEF_CONST,positionMatrix.valuesOfAnglesOfDepartures(AoDIdx)*options.RAD_TO_DEF_CONST);
+                            anglesText = sprintf('AoA: %.0f\nAoD: %.0f',positionMatrix.networkPoV.valuesOfAnglesOfArrivals(AoAIdx)*options.RAD_TO_DEF_CONST,positionMatrix.networkPoV.valuesOfAnglesOfDepartures(AoDIdx)*options.RAD_TO_DEF_CONST);
                             text(xaxis(round(size(xaxis,1)/2))-4,-35,anglesText,'Rotation',90,'FontWeight','bold','FontSize',8);
                             %line([noOfAlreadyPlottedSamples, noOfAlreadyPlottedSamples],[options.RSSI_AXIS_MAX_VALUE, options.RSSI_AXIS_MIN_VALUE])
                             line([noOfAlreadyPlottedSamples+noOfValidSamples, noOfAlreadyPlottedSamples+noOfValidSamples],[options.RSSI_AXIS_MAX_VALUE-5, options.RSSI_AXIS_MIN_VALUE+5],'LineStyle','-.','LineWidth',1.5,'Color','r')
                             
-                            temp = positionMatrix.rssi.linksIdx{positionMatrix.valuesOfDistance == distances(distanceIdx),AoAIdx,AoDIdx};
+                            temp = positionMatrix.networkPoV.rssi.linksIdx{positionMatrix.networkPoV.valuesOfDistance == distances(distanceIdx),AoAIdx,AoDIdx};
                             i = 1;
                             while i < size(temp,1)
                                 linkIdx = temp(i);
@@ -212,19 +212,88 @@ if options.VERBOSITY_LEVEL > 2
                 title(titleStr);
             end
         end
+                   
+%         if isfield(file{fileIdxToPlot},'features')
+%             if isfield(file{fileIdxToPlot}.features,'Y')
+%                 
+%                 distance = file{fileIdxToPlot}.features.Y.distance;
+%                 angleOfArrival = file{fileIdxToPlot}.features.Y.angleOfArrival;
+%                 angleOfDeparture = file{fileIdxToPlot}.features.Y.angleOfDeparture;
+%                 valuesOfDistance = unique(distance(:));
+%                 valuesOfDistance = valuesOfDistance(valuesOfDistance ~= 0);
+%                 
+%                 rssi = file{fileIdxToPlot}.features.X.rssi;
+%                 noOfLinks = size(rssi,2);
+%                 noOfTimeSamples = size(rssi,1);
+%                 linkIdxHelper = ones(noOfTimeSamples,1)*(1:1:noOfLinks);
+%                 
+%                 for distanceIdx = 1:size(valuesOfDistance,1)
+%                     %positionMatrix = file{fileIdxToPlot}.positionMatrix;
+%                     
+%                     figure(1234*fileIdxToPlot+distanceIdx);
+%                     hold on
+%                     valuesOfAnglesOfArrivals = unique(file{fileIdxToPlot}.features.Y.angleOfArrival(:));
+%                     valuesOfAnglesOfDepartures = unique(file{fileIdxToPlot}.features.Y.angleOfDeparture(:));
+% 
+%                     noOfAngleOfArrivals = size(valuesOfAnglesOfArrivals,1);
+%                     noOfAngleOfDepartures = size(valuesOfAnglesOfDepartures,1);
+% 
+%                     noOfAlreadyPlottedSamples = 0;
+%                     for AoAIdx = 1 : noOfAngleOfArrivals
+%                         for AoDIdx = 1 : noOfAngleOfDepartures
+%                             rssiSelectedIdxs = distance == valuesOfDistance(distanceIdx) & angleOfArrival == valuesOfAnglesOfArrivals(AoAIdx) & angleOfDeparture == valuesOfAnglesOfDepartures(AoDIdx);
+%                             rssiSamples = rssi(rssiSelectedIdxs);
+%                             if ~isempty(rssiSamples)
+%                                 noOfValidSamples = size(rssiSamples,1);
+%                                 xaxis = (noOfAlreadyPlottedSamples+1:1:noOfAlreadyPlottedSamples+noOfValidSamples)';
+%                                 plot(xaxis, rssiSamples,'.');
+%                                 anglesText = sprintf('AoA: %.0f\nAoD: %.0f',valuesOfAnglesOfArrivals(AoAIdx)*options.RAD_TO_DEF_CONST,valuesOfAnglesOfDepartures(AoDIdx)*options.RAD_TO_DEF_CONST);
+%                                 text(xaxis(round(size(xaxis,1)/2))-4,-35,anglesText,'Rotation',90,'FontWeight','bold','FontSize',8);
+%                                 %line([noOfAlreadyPlottedSamples, noOfAlreadyPlottedSamples],[options.RSSI_AXIS_MAX_VALUE, options.RSSI_AXIS_MIN_VALUE])
+%                                 line([noOfAlreadyPlottedSamples+noOfValidSamples, noOfAlreadyPlottedSamples+noOfValidSamples],[options.RSSI_AXIS_MAX_VALUE-5, options.RSSI_AXIS_MIN_VALUE+5],'LineStyle','-.','LineWidth',1.5,'Color','r')
+% 
+%                                 temp = linkIdxHelper(rssiSelectedIdxs);
+%                                 i = 1;
+%                                 while i < size(temp,1)
+%                                     linkIdx = temp(i);
+%                                     noOfSamples = sum(temp == linkIdx);
+%                                     textToPlot = sprintf('IDrx: 0x%02x\nIDtx: 0x%02x',links.IDrx{linkIdx},links.IDtx{linkIdx});
+%                                     xToPlotText = noOfAlreadyPlottedSamples + i + (noOfSamples)/2;
+%                                     text(xToPlotText-4,-108,textToPlot,'Rotation',90,'FontWeight','bold','FontSize',8);
+%                                     if(i + noOfSamples < size(temp,1))
+%                                         line([noOfAlreadyPlottedSamples+i+noOfSamples, noOfAlreadyPlottedSamples+i+noOfSamples],[rssiSamples(i+noOfSamples)-5, options.RSSI_AXIS_MIN_VALUE+10],'LineStyle','-.','LineWidth',1.5,'Color','b')
+%                                     end
+%                                     i = i + noOfSamples;
+%                                 end
+%                                 noOfAlreadyPlottedSamples = noOfAlreadyPlottedSamples + noOfValidSamples;
+%                             end
+%                         end
+%                     end
+%                     hold off
+%                     axis([0, noOfAlreadyPlottedSamples,options.RSSI_AXIS_MIN_VALUE, options.RSSI_AXIS_MAX_VALUE]);
+%                     grid on
+%                     ylabel('RSSI [dBm]');
+%                     xlabel('samplesNo');
+%                     titleStr = sprintf('RSSI samples for all links with lenght %.2fm - FileNo: %d',valuesOfDistance(distanceIdx),fileIdxToPlot);
+%                     title(titleStr);
+%                 end
+%             end
+%         end
     end
 end
 
 if options.VERBOSITY_LEVEL > 0
-    noOfFiles = size(file,1);
-    
-    aggregatedLinksMeanStandardDeviation = zeros(noOfFiles,1);
-    linksMeanStandardDeviation = zeros(noOfFiles,1);
-    
-    for fileIdxToPlot = 1:noOfFiles
-        aggregatedLinksMeanStandardDeviation(fileIdxToPlot,1) = file{fileIdxToPlot}.S.aggregatedLinksMeanStandardDeviation;
-        linksMeanStandardDeviation(fileIdxToPlot,1) = file{fileIdxToPlot}.S.linksMeanStandardDeviation;
-        fprintf('File %d: linksMeanStandardDeviation = %.3f - aggregatedLinksMeanStandardDeviation = %.3f\n',fileIdxToPlot,linksMeanStandardDeviation(fileIdxToPlot,1),aggregatedLinksMeanStandardDeviation(fileIdxToPlot,1));
+    if isfield(file{fileIdxToPlot},'S')
+        noOfFiles = size(file,1);
+        
+        aggregatedLinksMeanStandardDeviation = zeros(noOfFiles,1);
+        linksMeanStandardDeviation = zeros(noOfFiles,1);
+        
+        for fileIdxToPlot = 1:noOfFiles
+            aggregatedLinksMeanStandardDeviation(fileIdxToPlot,1) = file{fileIdxToPlot}.S.aggregatedLinksMeanStandardDeviation;
+            linksMeanStandardDeviation(fileIdxToPlot,1) = file{fileIdxToPlot}.S.linksMeanStandardDeviation;
+            fprintf('File %d: linksMeanStandardDeviation = %.3f - aggregatedLinksMeanStandardDeviation = %.3f\n',fileIdxToPlot,linksMeanStandardDeviation(fileIdxToPlot,1),aggregatedLinksMeanStandardDeviation(fileIdxToPlot,1));
+        end
+        fprintf('Average: linksMeanStandardDeviations = %.3f - aggregatedLinksMeanStandardDeviation = %.3f\n',mean(linksMeanStandardDeviation(:,1)),mean(aggregatedLinksMeanStandardDeviation(:,1)));
     end
-    fprintf('Average: linksMeanStandardDeviations = %.3f - aggregatedLinksMeanStandardDeviation = %.3f\n',mean(linksMeanStandardDeviation(:,1)),mean(aggregatedLinksMeanStandardDeviation(:,1)));
 end

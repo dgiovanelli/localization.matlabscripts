@@ -1,3 +1,5 @@
+%%CONSTANTS
+
 % where are the files
 options.LOG_FILE_PATH = {
                       '..\input\LOG\MUSE_21_02_2016\LOGS\log_52_15.9.35.txt'; %1m alligned
@@ -102,29 +104,47 @@ options.RSSI_LENGTH_BYTE = 1;
 %the list of ids to consider. Leave it empty or comment it for consider all ids
 %options.IDS_TO_CONSIDER = [32, 33 ,35,37,39];
 
-%rssi to m fade model parameters
-options.K_TF = [-21.4014];
-options.TX_PWR_10M = -67.3450;
+options.RAD_TO_DEF_CONST = 180/pi;
+options.DEG_TO_RAD_CONST = 1/options.RAD_TO_DEF_CONST;
 
-options.WSIZE_S = 2;
-options.WINC_S  = 0.5;
+options.TRAIN_SET_LABEL_CONSTANT = 1;
+options.CROSSVALIDATION_SET_LABEL_CONSTANT = 2;
+options.TEST_SET_LABEL_CONSTANT = 3;
+
+options.POLY_FADE_MODEL_LABEL_CONSTANT = 1;
+options.LOG_FADE_MODEL_LABEL_CONSTANT = 2;
+
+options.ONLY_RSSI_DATA = 'onlyRssi';
+options.RSSI_AND_ORIENTATION_DATA = 'rssiAndOrientation';
+
+%% CONFIGURATION
+
+options.WSIZE_S = 3;
+options.WINC_S  = 1.5;
+
+options.FADE_MODEL_TO_USE = options.POLY_FADE_MODEL_LABEL_CONSTANT;  % POLY_FADE_MODEL_LABEL_CONSTANT LOG_FADE_MODEL_LABEL_CONSTANT
+options.INPUT_DATA_TYPE = options.ONLY_RSSI_DATA;
+if strcmp(options.INPUT_DATA_TYPE,options.RSSI_AND_ORIENTATION_DATA)
+    warning('in this implementation angles do not add information. The overall performances degrade if this model is used!');
+end
+options.POLYNOMIAL_FEATURES_DEGREE = 4; %used only if FADE_MODEL_TO_USE = POLY_FADE_MODEL_LABEL_CONSTANT
+
+options.RSSI_AXIS_MIN_VALUE = -110;
+options.RSSI_AXIS_MAX_VALUE = 0;
+
+options.VERBOSITY_LEVEL = 10;
 
 options.NUMBER_OF_RANOMLY_CHOSEN_FIGURE_TO_PLOT = 0;
-options.FILES_INDEXES_TO_PLOT = [7,15,23]; %set this to empty to plot only one (randomly chosen) file.
+
+options.FILES_INDEXES_TO_PLOT = [1];%,9,17]; %set this to empty to plot only one (randomly chosen) file.
 if size(options.FILES_INDEXES_TO_PLOT,2) > size(options.LOG_FILE_PATH,1)
     warning('size(options.FILES_INDEXES_TO_PLOT,2) > size(options.LOG_FILE_PATH,1)');
     options.FILES_INDEXES_TO_PLOT = [];
 end
 
-options.DECIMATION_FACTOR = 10; 
+options.DECIMATION_FACTOR = 1; 
 if options.DECIMATION_FACTOR < 1
-    warning('Decimation factor shall be < 1');
+    error('Decimation factor shall be >= 1');
 end
 
-options.VERBOSITY_LEVEL = 10;
-
-options.RAD_TO_DEF_CONST = 180/pi;
-options.DEG_TO_RAD_CONST = 1/options.RAD_TO_DEF_CONST;
-
-options.RSSI_AXIS_MIN_VALUE = -110;
-options.RSSI_AXIS_MAX_VALUE = 0;
+options.REGULARIZATION_LAMBDA = 5;
