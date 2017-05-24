@@ -9,8 +9,8 @@ meanStd = 0;
 for rxNodeIdx = 1 : noOfNodes - 1
     for txNodeIdx = rxNodeIdx + 1 : noOfNodes
         %extract data to use in the loop
-        directLinkRssi = reshape(S.rssi(rxNodeIdx,txNodeIdx,:),[size(S.rssi,3),1,1]);
-        inverseLinkRssi = reshape(S.rssi(txNodeIdx,rxNodeIdx,:),[size(S.rssi,3),1,1]);
+        directLinkRssi = reshape(S.rssi(rxNodeIdx,txNodeIdx,:),size(S.rssi,3),1,1);
+        inverseLinkRssi = reshape(S.rssi(txNodeIdx,rxNodeIdx,:),size(S.rssi,3),1,1);
         dirInvLinkRssi = [directLinkRssi , inverseLinkRssi];
         
         %calculate non-aggregated std dev

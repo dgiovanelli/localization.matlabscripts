@@ -3,10 +3,10 @@ function model = trainModel(files,options)
 %then the rssi (and angles) of a link cannot impact on other links.
 %Next step could be to treat every link rssi and angles as a single feature, but it is still not clear which should be the output of such model
 %(it could be the lenght (in meters) of the first link).
-inputDataType = options.INPUT_DATA_TYPE;
+modelTypeStr = options.INPUT_DATA_TYPE;
 
 if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT || options.FADE_MODEL_TO_USE == options.LOG_FADE_MODEL_LABEL_CONSTANT
-    if strcmp(inputDataType,options.ONLY_RSSI_DATA)
+    if strcmp(modelTypeStr,options.ONLY_RSSI_DATA)
         X = [];
         y = [];
         noOfFiles = size(files,1);
@@ -46,9 +46,9 @@ if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT || option
         end
         model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda, options)), tetha0,opt);
         model.p = p;
-        model.inputDataType = inputDataType;
+        model.inputDataType = modelTypeStr;
         model.fadeModelType = options.FADE_MODEL_TO_USE;
-    elseif strcmp(inputDataType,options.RSSI_AND_ORIENTATION_DATA)
+    elseif strcmp(modelTypeStr,options.RSSI_AND_ORIENTATION_DATA)
         
         p = options.POLYNOMIAL_FEATURES_DEGREE;
         noOfFiles = size(files,1);
@@ -96,9 +96,9 @@ if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT || option
         
         model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda,options)), tetha0,opt);
         model.p = p;
-        model.inputDataType = inputDataType;
+        model.inputDataType = modelTypeStr;
         model.fadeModelType = options.FADE_MODEL_TO_USE;
-    elseif strcmp(inputDataType,options.RSSI_AND_ORIENTATION_DATA)
+    elseif strcmp(modelTypeStr,options.RSSI_AND_ORIENTATION_DATA)
         
         p = options.POLYNOMIAL_FEATURES_DEGREE;
         noOfFiles = size(files,1);
@@ -146,57 +146,7 @@ if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT || option
         
         model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda,options)), tetha0,opt);
         model.p = p;
-        model.inputDataType = inputDataType;
-        model.fadeModelType = options.FADE_MODEL_TO_USE;
-    elseif strcmp(inputDataType,options.RSSI_AND_ANGLES_DATA)
-        
-        p = options.POLYNOMIAL_FEATURES_DEGREE;
-        noOfFiles = size(files,1);
-        X = [];
-        y = [];
-        for fileNo = 1:noOfFiles
-            noOfLinks = size(files{fileNo}.features.ID1,1);
-            noOfTimeSamples = size(files{fileNo}.features.X.rssi{1},1);
-            trainingSetLogicalIdx = reshape(cell2mat(files{fileNo}.features.set),noOfTimeSamples,noOfLinks) == options.TRAIN_SET_LABEL_CONSTANT;
-            distance = reshape(cell2mat(files{fileNo}.features.Y.distance),noOfTimeSamples,noOfLinks);
-            rssi = reshape(cell2mat(files{fileNo}.features.X.rssi),noOfTimeSamples,noOfLinks);
-            node1Orientation = reshape(cell2mat(files{fileNo}.features.X.node1Orientation),noOfTimeSamples,noOfLinks);
-            node2Orientation = reshape(cell2mat(files{fileNo}.features.X.node2Orientation),noOfTimeSamples,noOfLinks);
-            node1AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node1AngleOfLink),noOfTimeSamples,noOfLinks);
-            node2AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node2AngleOfLink),noOfTimeSamples,noOfLinks);
-            %         X = [X ; rssi(trainingSetLogicalIdx) , node1Orientation(trainingSetLogicalIdx), node2Orientation(trainingSetLogicalIdx), node1AngleOfLink(trainingSetLogicalIdx), node2AngleOfLink(trainingSetLogicalIdx)];
-            X = [X ; rssi(trainingSetLogicalIdx) , node1AngleOfLink(trainingSetLogicalIdx), node2AngleOfLink(trainingSetLogicalIdx)];
-            y = [y ; distance(trainingSetLogicalIdx)];
-        end
-        nans = isnan(X);
-        X = X(~((nans(:,1) | nans(:,2) |  nans(:,3))),:);
-        y = y(~(nans(:,1) | nans(:,2) |  nans(:,3)));
-        fprintf('%d samples discarded in training because they are NaN.\n',sum(sum(nans)));
-        
-        if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT
-            lambda = options.REGULARIZATION_LAMBDA;
-            p = options.POLYNOMIAL_FEATURES_DEGREE;
-            %Xpower = calculatePowerFeatures(X);
-            Xpoly = calculatePolynomialFeatures(X, p);
-            [Xpoly, model.mu, model.sigma] = featureNormalize(Xpoly);  % Normalize
-            Xpoly = [ones(size(X,1),1), Xpoly]; %add ones
-            opt = optimset('GradObj', 'on', 'MaxIter', 1000,'MaxFunEvals',1000);
-            tetha0 = ones(size(Xpoly,2),1);
-        elseif options.FADE_MODEL_TO_USE == options.LOG_FADE_MODEL_LABEL_CONSTANT
-            lambda = 0;
-            p = 1;
-            Xpoly = X; %no polynomial feature into log model!
-            [Xpoly, model.mu, model.sigma] = featureNormalize(Xpoly);  % Normalize
-            Xpoly = [ones(size(X,1),1), Xpoly]; %add ones
-            opt = optimset('GradObj', 'off', 'MaxIter', 1000,'MaxFunEvals',1000);
-            tetha0 = ones(size(Xpoly,2)+1,1);
-        else
-            error('choose one of the two types of model with options.FADE_MODEL_TO_USE');
-        end
-        
-        model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda,options)), tetha0,opt);
-        model.p = p;
-        model.inputDataType = inputDataType;
+        model.inputDataType = modelTypeStr;
         model.fadeModelType = options.FADE_MODEL_TO_USE;
     else
         error('modelTypeStr must be onlyRssi or rssiAndOrientation!');
@@ -302,7 +252,7 @@ elseif options.FADE_MODEL_TO_USE == options.POLY2_MODEL_LABEL_CONSTANT
     
     model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda,options)), tetha0,opt);
     model.p = p;
-    model.inputDataType = inputDataType;
+    model.inputDataType = modelTypeStr;
     model.fadeModelType = options.FADE_MODEL_TO_USE;
 elseif options.FADE_MODEL_TO_USE == options.ANN_MODEL_LABEL_CONSTANT
     p = options.POLYNOMIAL_FEATURES_DEGREE;
@@ -426,7 +376,7 @@ elseif options.FADE_MODEL_TO_USE == options.ANN_MODEL_LABEL_CONSTANT
     
     %    model.tetha = fminunc(@(t)(costFunction(Xpoly, y, t, lambda,options)), tetha0,opt);
     model.p = p;
-    model.inputDataType = inputDataType;
+    model.inputDataType = modelTypeStr;
     model.fadeModelType = options.FADE_MODEL_TO_USE;
     
 elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
@@ -463,7 +413,7 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
             node3ID = triangles(triangleIdx,3);
             
             link1_2idx = find(cell2mat(files{fileNo}.features.ID1) == node1ID & cell2mat(files{fileNo}.features.ID2) == node2ID);
-            if isempty(link1_2idx) %if it's empty the order of nodes is reversed, just search the correct link inverting the order
+            if isempty(link1_2idx)
                 link1_2idx = find(cell2mat(files{fileNo}.features.ID1) == node2ID & cell2mat(files{fileNo}.features.ID2) == node1ID);
                 link1_2AngleNode1 = files{fileNo}.features.Y.node2AngleOfLink{link1_2idx};
                 link1_2AngleNode2 = files{fileNo}.features.Y.node1AngleOfLink{link1_2idx};
@@ -472,7 +422,7 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
                 link1_2AngleNode2 = files{fileNo}.features.Y.node2AngleOfLink{link1_2idx};
             end
             link2_3idx = find(cell2mat(files{fileNo}.features.ID1) == node2ID & cell2mat(files{fileNo}.features.ID2) == node3ID);% | cell2mat(files{fileNo}.features.ID1) == node3ID & cell2mat(files{fileNo}.features.ID2) == node2ID);
-            if isempty(link2_3idx) %if it's empty the order of nodes is reversed, just search the correct link inverting the order
+            if isempty(link2_3idx)
                 link2_3idx = find(cell2mat(files{fileNo}.features.ID1) == node3ID & cell2mat(files{fileNo}.features.ID2) == node2ID);
                 link2_3AngleNode1 = files{fileNo}.features.Y.node2AngleOfLink{link2_3idx};
                 link2_3AngleNode2 = files{fileNo}.features.Y.node1AngleOfLink{link2_3idx};
@@ -481,7 +431,7 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
                 link2_3AngleNode2 = files{fileNo}.features.Y.node2AngleOfLink{link2_3idx};
             end
             link3_1idx = find(cell2mat(files{fileNo}.features.ID1) == node3ID & cell2mat(files{fileNo}.features.ID2) == node1ID);% | cell2mat(files{fileNo}.features.ID1) == node1ID & cell2mat(files{fileNo}.features.ID2) == node3ID);
-            if isempty(link3_1idx) %if it's empty the order of nodes is reversed, just search the correct link inverting the order
+            if isempty(link3_1idx)
                 link3_1idx = find(cell2mat(files{fileNo}.features.ID1) == node1ID & cell2mat(files{fileNo}.features.ID2) == node3ID);
                 link3_1AngleNode1 = files{fileNo}.features.Y.node2AngleOfLink{link3_1idx};
                 link3_1AngleNode2 = files{fileNo}.features.Y.node1AngleOfLink{link3_1idx};
@@ -491,24 +441,19 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
             end
             
             rssiFeatures = [files{fileNo}.features.X.rssi{link1_2idx}, files{fileNo}.features.X.rssi{link2_3idx} , files{fileNo}.features.X.rssi{link3_1idx}];
-            orientationFeatures = [files{fileNo}.features.X.node1Orientation{link1_2idx}, files{fileNo}.features.X.node1Orientation{link2_3idx}, files{fileNo}.features.X.node1Orientation{link3_1idx}];
-            
-            linksAnglesFeature = [link1_2AngleNode1, link1_2AngleNode2, link2_3AngleNode1, link2_3AngleNode2, link3_1AngleNode1, link3_1AngleNode2];
+            %rssiFeatures = [files{fileNo}.features.X.rssiMean{link1_2idx}, files{fileNo}.features.X.rssiMean{link2_3idx} , files{fileNo}.features.X.rssiMean{link3_1idx}];%, files{fileNo}.features.X.rssiStd{link1_2idx}, files{fileNo}.features.X.rssiStd{link2_3idx} , files{fileNo}.features.X.rssiStd{link3_1idx}];
+           
+            %linksAnglesFeature = [link1_2AngleNode1, link1_2AngleNode2, link2_3AngleNode1, link2_3AngleNode2, link3_1AngleNode1, link3_1AngleNode2];
             distanceFeatures = [files{fileNo}.features.Y.distance{link1_2idx}, files{fileNo}.features.Y.distance{link2_3idx} , files{fileNo}.features.Y.distance{link3_1idx}];
-             
+            %distanceFeatures = [files{fileNo}.features.Y.distance{link1_2idx}(1), files{fileNo}.features.Y.distance{link2_3idx}(1) , files{fileNo}.features.Y.distance{link3_1idx}(1)];
+            
+            %node1AngleOfLinkFeatures = [files{fileNo}.features.X.rssi{link1_2idx}, files{fileNo}.features.X.rssi{link2_3idx} , files{fileNo}.features.X.rssi{link3_1idx}];
+            %node2AngleOfLinkFeatures = [files{fileNo}.features.Y.distance{link1_2idx}, files{fileNo}.features.Y.distance{link2_3idx} , files{fileNo}.features.Y.distance{link3_1idx}];
+
             set = files{fileNo}.features.set{link1_2idx};
-            if sum([xor(files{fileNo}.features.set{link2_3idx}, set) ; xor(files{fileNo}.features.set{link3_1idx}, set)]) ~= 0
-                warning('it seems that some links of the same triangle do not belong to the same set!');
-            end
             if ~isempty(distanceFeatures)
-                if strcmp(inputDataType,options.ONLY_RSSI_DATA)
-                    X = [X ; rssiFeatures];
-                elseif strcmp(inputDataType,options.RSSI_AND_ANGLES_DATA)
-                    %X = [X ; rssiFeatures,orientationFeatures,linksAnglesFeature];
-                    X = [X ; rssiFeatures,linksAnglesFeature];
-                else
-                    error('%s not valid selection when ANN2 model is used!', model.inputDataType);
-                end
+                %        X = [X ; rssiFetures,node1OrientationFeatures,node2OrientationFeatures,node1AngleOfLinkFeatures,node2AngleOfLinkFeatures];
+                X = [X ; rssiFeatures]; %, linksAnglesFeature];%,node1OrientationFeatures,node2OrientationFeatures,node1AngleOfLinkFeatures,node2AngleOfLinkFeatures];%,node1OrientationFeatures,node2OrientationFeatures];
                 y = [y ; distanceFeatures];
                 sets = [sets ; set];
             end
@@ -535,7 +480,7 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
     tempnet.trainFcn = 'trainbr';
     %tempnet.performParam.regularization = options.REGULARIZATION_LAMBDA;
     
-    tempnet.trainParam.max_fail = 20;
+    tempnet.trainParam.max_fail = 30;
     tempnet.trainParam.mu_max = 100000000000000;
     tempnet.trainParam.epochs = 200;
     %tempnet.trainParam.showWindow = false;
@@ -558,6 +503,6 @@ elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
     
     [model.net,tr] = train(tempnet,Xpoly',y','useParallel','yes');
     model.p = p;
-    model.inputDataType = inputDataType;
+    model.inputDataType = modelTypeStr;
     model.fadeModelType = options.FADE_MODEL_TO_USE;
 end

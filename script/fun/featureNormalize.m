@@ -22,10 +22,10 @@ else %if the model is not provided the features are scaled based on their mean a
     mu = zeros(noOfFeatures,1);
     sigma = zeros(noOfFeatures,1);
     for f=1:noOfFeatures
-        mu(f) = mean(X(:,f));
+        mu(f) = mean(X(~isnan(X(:,f)),f));
         X_norm(:,f) = bsxfun(@minus, X(:,f), mu(f));
         
-        sigma(f) = std(X_norm(:,f));
+        sigma(f) = std(X_norm(~isnan(X_norm(:,f)),f));
         if sigma(f) ~= 0
             X_norm(:,f) = bsxfun(@rdivide, X_norm(:,f), sigma(f));
         else

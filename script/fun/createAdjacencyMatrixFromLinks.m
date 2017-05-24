@@ -15,7 +15,7 @@ for rxIdx = 1:N
     for txIdx = 1:N
         linkIdx = rxIdx + (txIdx-1)*N;
         S.rssi(rxIdx,txIdx,:) = links.windowedSignal.rssi{linkIdx};
-        S.distance(rxIdx,txIdx,:) = links.windowedSignal.distance{linkIdx};
+        %S.distance(rxIdx,txIdx,:) = links.windowedSignal.distance{linkIdx}; 
     end
     S.orientation(rxIdx,:) = links.windowedSignal.rxNodeOrientation{linkIdx};
 end

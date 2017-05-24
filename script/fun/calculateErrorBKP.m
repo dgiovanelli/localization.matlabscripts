@@ -1,5 +1,4 @@
 function err = calculateError(files,model,options,setSelectionStr)
-
 enablePlot = false;
 noOfFiles = size(files,1);
 
@@ -7,7 +6,7 @@ X = [];
 y = [];
 totalAmoutOfSamples = 0;
 
-if model.fadeModelType == options.POLY_FADE_MODEL_LABEL_CONSTANT || model.fadeModelType == options.LOG_FADE_MODEL_LABEL_CONSTANT
+if options.FADE_MODEL_TO_USE == options.POLY_FADE_MODEL_LABEL_CONSTANT || options.FADE_MODEL_TO_USE == options.LOG_FADE_MODEL_LABEL_CONSTANT
     for fileNo = 1:noOfFiles
         %prepare variables
         noOfLinks = size(files{fileNo}.features.ID1,1);
@@ -39,14 +38,12 @@ if model.fadeModelType == options.POLY_FADE_MODEL_LABEL_CONSTANT || model.fadeMo
             node1Orientation = reshape(cell2mat(files{fileNo}.features.X.node1Orientation),noOfTimeSamples,noOfLinks);
             node2Orientation = reshape(cell2mat(files{fileNo}.features.X.node2Orientation),noOfTimeSamples,noOfLinks);
             X = [X ; rssi(trainingSetLogicalIdx) , node1Orientation(trainingSetLogicalIdx), node2Orientation(trainingSetLogicalIdx)];
-            %                         Xtrain = [Xtrain ; rssi(trainingSetLogicalIdx) , node1Orientation(trainingSetLogicalIdx), node2Orientation(trainingSetLogicalIdx), node1AngleOfLink(trainingSetLogicalIdx) ,node2AngleOfLink(trainingSetLogicalIdx)];
+            
+            %             node1AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node1AngleOfLink),noOfTimeSamples,noOfLinks);
+            %             node2AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node2AngleOfLink),noOfTimeSamples,noOfLinks);
+            %             Xtrain = [Xtrain ; rssi(trainingSetLogicalIdx) , node1Orientation(trainingSetLogicalIdx), node2Orientation(trainingSetLogicalIdx), node1AngleOfLink(trainingSetLogicalIdx) ,node2AngleOfLink(trainingSetLogicalIdx)];
         elseif strcmp(model.inputDataType,options.ONLY_RSSI_DATA)
             X = [X ; rssi(trainingSetLogicalIdx)];
-        elseif strcmp(model.inputDataType,options.RSSI_AND_ANGLES_DATA)
-            node1AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node1AngleOfLink),noOfTimeSamples,noOfLinks);
-            node2AngleOfLink = reshape(cell2mat(files{fileNo}.features.Y.node2AngleOfLink),noOfTimeSamples,noOfLinks);
-            
-            X = [X ; rssi(trainingSetLogicalIdx), node1AngleOfLink(trainingSetLogicalIdx), node2AngleOfLink(trainingSetLogicalIdx)];
         end
         y = [y ; distance(trainingSetLogicalIdx)];
     end
@@ -69,31 +66,17 @@ if model.fadeModelType == options.POLY_FADE_MODEL_LABEL_CONSTANT || model.fadeMo
         plot(1:1:size(yPredicted(:),1),yPredicted(:) , 1:1:size(y(:),1),y(:))
         grid on;
         legend('predicted','ground truth');
-        if strcmp(model.inputDataType,options.ONLY_RSSI_DATA)
-            figure
-            Xmodel = (-90:0.1:-40)';
-            XmodelPoly = calculatePolynomialFeatures(Xmodel, p);
-            [XmodelNorm, ~, ~] = featureNormalize(XmodelPoly,model);
-            ymodel = fadeHypothesis([ones(size(XmodelNorm,1),1), XmodelNorm],model.tetha,options);
-            plot(y,X,'.',ymodel,Xmodel)
-            grid on;
-            legend('model','samples');
-        end
     end
-    
     predictionError = yPredicted-y;
     predictionError(isnan(predictionError)) = 0;
     
     predictionErrorNorm = predictionError./y;
     
-%     err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-%     err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
-%     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-    err.rmse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-    err.rnmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
+    err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
+    err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-
-elseif model.fadeModelType == options.POLY2_MODEL_LABEL_CONSTANT
+    
+elseif options.FADE_MODEL_TO_USE == options.POLY2_MODEL_LABEL_CONSTANT
     for fileNo = 1:noOfFiles
         %prepare variables
         noOfLinks = size(files{fileNo}.features.ID1,1);
@@ -210,14 +193,11 @@ elseif model.fadeModelType == options.POLY2_MODEL_LABEL_CONSTANT
     
     predictionErrorNorm = predictionError./y;
     
-%     err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-%     err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
-%     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-    err.rmse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-    err.rnmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
+    err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
+    err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
     
-elseif model.fadeModelType == options.ANN_MODEL_LABEL_CONSTANT
+elseif options.FADE_MODEL_TO_USE == options.ANN_MODEL_LABEL_CONSTANT
     
     
     for fileNo = 1:noOfFiles
@@ -358,13 +338,10 @@ elseif model.fadeModelType == options.ANN_MODEL_LABEL_CONSTANT
     
     predictionErrorNorm = predictionError./y;
     
-%     err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-%     err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
-%     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-    err.rmse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-    err.rnmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
+    err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
+    err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-elseif model.fadeModelType == options.ANN2_MODEL_LABEL_CONSTANT
+elseif options.FADE_MODEL_TO_USE == options.ANN2_MODEL_LABEL_CONSTANT
     
     
     p = options.POLYNOMIAL_FEATURES_DEGREE;
@@ -435,31 +412,24 @@ elseif model.fadeModelType == options.ANN2_MODEL_LABEL_CONSTANT
                     (( (strcmp(setSelectionStr,'CrossValidation') || strcmp(setSelectionStr,'Test'))  && options.MERGE_TEST_AND_CORSSVALIDATION) && (files{fileNo}.features.set{link1_2idx}(1) == options.TEST_SET_LABEL_CONSTANT) && (files{fileNo}.features.set{link2_3idx}(1) == options.TEST_SET_LABEL_CONSTANT)  && (files{fileNo}.features.set{link3_1idx}(1) == options.TEST_SET_LABEL_CONSTANT))
                 
                 rssiFeatures = [files{fileNo}.features.X.rssi{link1_2idx}, files{fileNo}.features.X.rssi{link2_3idx} , files{fileNo}.features.X.rssi{link3_1idx}];
-                orientationFeatures = [files{fileNo}.features.X.node1Orientation{link1_2idx}, files{fileNo}.features.X.node1Orientation{link2_3idx}, files{fileNo}.features.X.node1Orientation{link3_1idx}];
+                %rssiFeatures = [files{fileNo}.features.X.rssiMean{link1_2idx}, files{fileNo}.features.X.rssiMean{link2_3idx} , files{fileNo}.features.X.rssiMean{link3_1idx}];%, files{fileNo}.features.X.rssiStd{link1_2idx}, files{fileNo}.features.X.rssiStd{link2_3idx} , files{fileNo}.features.X.rssiStd{link3_1idx}];
                 
-                linksAnglesFeature = [link1_2AngleNode1, link1_2AngleNode2, link2_3AngleNode1, link2_3AngleNode2, link3_1AngleNode1, link3_1AngleNode2];
+                %linksAnglesFeature = [link1_2AngleNode1, link1_2AngleNode2, link2_3AngleNode1, link2_3AngleNode2, link3_1AngleNode1, link3_1AngleNode2];
                 distanceFeatures = [files{fileNo}.features.Y.distance{link1_2idx}, files{fileNo}.features.Y.distance{link2_3idx} , files{fileNo}.features.Y.distance{link3_1idx}];
+                %distanceFeatures = [files{fileNo}.features.Y.distance{link1_2idx}(1), files{fileNo}.features.Y.distance{link2_3idx}(1) , files{fileNo}.features.Y.distance{link3_1idx}(1)];
+                
+                %node1AngleOfLinkFeatures = [files{fileNo}.features.X.rssi{link1_2idx}, files{fileNo}.features.X.rssi{link2_3idx} , files{fileNo}.features.X.rssi{link3_1idx}];
+                %node2AngleOfLinkFeatures = [files{fileNo}.features.Y.distance{link1_2idx}, files{fileNo}.features.Y.distance{link2_3idx} , files{fileNo}.features.Y.distance{link3_1idx}];
+                %no division in sets for now
                 
                 set = files{fileNo}.features.set{link1_2idx};
-                if sum([xor(files{fileNo}.features.set{link2_3idx}, set) ; xor(files{fileNo}.features.set{link3_1idx}, set)]) ~= 0
-                    warning('it seems that some links of the same triangle do not belong to the same set!');
-                end
-                
-                %set = files{fileNo}.features.set{link1_2idx};
                 if ~isempty(distanceFeatures)
-                    if strcmp(model.inputDataType,options.ONLY_RSSI_DATA)
-                        X = [X ; rssiFeatures];
-                    elseif strcmp(model.inputDataType,options.RSSI_AND_ANGLES_DATA)
-                        %X = [X ; rssiFeatures,orientationFeatures,linksAnglesFeature];
-                        X = [X ; rssiFeatures,linksAnglesFeature];
-                    else
-                        error('%s not valid selection when ANN2 model is used!', model.inputDataType);
-                    end
+                    %        X = [X ; rssiFetures,node1OrientationFeatures,node2OrientationFeatures,node1AngleOfLinkFeatures,node2AngleOfLinkFeatures];
+                    X = [X ; rssiFeatures ];%, linksAnglesFeature];%,node1OrientationFeatures,node2OrientationFeatures,node1AngleOfLinkFeatures,node2AngleOfLinkFeatures];%,node1OrientationFeatures,node2OrientationFeatures];
                     y = [y ; distanceFeatures];
                     linksRec = [linksRec ; link1_2idx*ones(size(rssiFeatures,1),1), link2_3idx*ones(size(rssiFeatures,1),1), link3_1idx*ones(size(rssiFeatures,1),1)];
                     filesRec = [filesRec ; fileNo*ones(size(rssiFeatures,1),1)];
-                    triangleRec = [triangleRec ; triangleIdx*ones(size(rssiFeatures,1),1)];
-                    %sets = [sets ; set];
+                    triangleRec = [triangleRec ; triangleIdx*ones(size(rssiFeatures,1),1)];                  
                 end
             end
         end
@@ -493,7 +463,7 @@ elseif model.fadeModelType == options.ANN2_MODEL_LABEL_CONSTANT
         
         selectIThFileData = filesRec == availableFiles(fileI);
         fileLength = size(selectIThFileData,1);
-        %selectIThTriangleData = zeros(fileLength,1);
+        selectIThTriangleData = zeros(fileLength,1);
         availablesTriangles = unique(triangleRec(selectIThFileData));
         availableLinks = unique(linksRec(selectIThFileData,:));
         noOfLinks = size(availableLinks,1);
@@ -576,10 +546,7 @@ elseif model.fadeModelType == options.ANN2_MODEL_LABEL_CONSTANT
     
     predictionErrorNorm = predictionError./distanceGroundTruth;
     
-%     err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-%     err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
-%     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
-    err.rmse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
-    err.rnmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
+    err.mse = sqrt(1/(size(predictionError,1)*size(predictionError,2))*sum(sum(predictionError.^2)));
+    err.nmse = sqrt(1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(predictionErrorNorm.^2)));
     err.nmae = 1/(size(predictionErrorNorm,1)*size(predictionErrorNorm,2))*sum(sum(abs(predictionErrorNorm)));
 end

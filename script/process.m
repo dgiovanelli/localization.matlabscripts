@@ -1,6 +1,15 @@
 clear
 close all
-clc
+%clc
+
+if 0
+myCluster = parcluster('local');
+if myCluster.NumWorkers ~= 4
+    myCluster.NumWorkers = 4;  % 'Modified' property now TRUE
+    saveProfile(myCluster);    % 'local' profile now updated,
+end                           % 'Modified' property now FALSE   
+parpool('local',4)
+end
 
 %constant are loaded in the 'options' struct
 importOptions;
@@ -11,6 +20,7 @@ fileID = openFile(options);
 noOfFile = size(fileID,1);
 file = cell(noOfFile,1);
 for fileIdx = 1 : noOfFile
+    file{fileIdx}.fileIdx = fileIdx;
     %file{fileIdx}.links = getLinksFromFile(fileID(fileIdx,1),options);
     
     %extract data from file and store it in structs
@@ -38,7 +48,7 @@ for fileIdx = 1 : noOfFile
 %     file{fileIdx}.links = rssiToDistanceConversion(file{fileIdx}.links,options); %the returned value of 'links' is the same of the input argument 'links' plus the fields 'rawSignal.distance' and '.windowedSignal.distance'
 %     
 %     %extract the adjancency matrix (S) from the links signals
-%     file{fileIdx}.S = createAdjacencyMatrixFromLinks(file{fileIdx}.links,options);
+%    file{fileIdx}.S = createAdjacencyMatrixFromLinks(file{fileIdx}.links,options);
 %     
 %     %evaluate the symmetry of the links by aggregating the two direction of the link. 
 %     %This returns the std dev (over time) of the aggregate rssi (the average, sample by sample, between the two directions).
@@ -48,20 +58,9 @@ for fileIdx = 1 : noOfFile
 %     
 %     %apply decimation (only to windowed signals)
 %     file{fileIdx}.links = decimateSamples(file{fileIdx}.links,options); %the returned value of 'links' is the same of the input argument 'links' plus the field '.decimatedSignal'
-%     
-    fprintf('\nFile %d of %d done!',fileIdx,noOfFile);
+     
+    fprintf('\nFile %d done!',fileIdx);
 end
 fprintf('\n');
 
-model = trainModel(file,options);
-model.trainError = calculateError(file,model,options,'Train');
-model.crossVError = calculateError(file,model,options,'CrossValidation');
-model.testError = calculateError(file,model,options,'Test');
-
-plotModelWithTrainingData(file,model,options);
-
-%plot some data
-plotSomeResult(file,options);
-
-%TODOs:
-%trainare il modello di fading considerando solo la distanza, la distanza + un angolo (info aggregata), la distanza con due angoli
+save data\logsImported.mat file options
