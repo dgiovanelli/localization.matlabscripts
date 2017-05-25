@@ -1,43 +1,81 @@
-radius = 1;
+radius = 12;
 %noOfNodes = 9; 
 startIdString = '0x20';
 startId = sscanf(startIdString,'0x%X');
 
-position.xy = [ 0           , 0             ; 
-                0           , 1             ;
-                sqrt(2)/2   ,  sqrt(2)/2    ;
-                1           , 0             ;
-                sqrt(2)/2   ,  -sqrt(2)/2   ;
-                0           , -1            ;
-                -sqrt(2)/2  , -sqrt(2)/2    ;
-                -1          , 0             ;
-                -sqrt(2)/2  , sqrt(2)/2    ;
-                ] * radius;
+%16/05/2017
+% position.xy = [ 0           , 0             ;           %0x20
+%                 0           , -1             ;           %0x21
+%                 -sqrt(2)/2   ,  -sqrt(2)/2    ;           %0x22
+%                 -1           , 0             ;           %0x23
+%                 -sqrt(2)/2   ,  sqrt(2)/2   ;           %0x24
+%                 0           , 1            ;           %0x25
+%                 sqrt(2)/2  , sqrt(2)/2    ;           %0x26
+%                 1          , 0             ;           %0x27
+%                 sqrt(2)/2  , -sqrt(2)/2    ;            %0x28
+%                 ] * radius;
 
+%23/05/2017
+position.xy = [ 0           , 0             ;           %0x20
+                1           , 0             ;           %0x21
+                sqrt(2)/2   ,  -sqrt(2)/2    ;           %0x22
+                0           , -1             ;           %0x23
+                -sqrt(2)/2   ,  -sqrt(2)/2   ;           %0x24
+                -1           , 0            ;           %0x25
+                -sqrt(2)/2  , sqrt(2)/2    ;           %0x26
+                0          , 1             ;           %0x27
+                sqrt(2)/2  , sqrt(2)/2    ;            %0x28
+                ] * radius;
+            
 noOfNodes = size(position.xy,1);
 position.id = (startId:1:startId+noOfNodes-1)';         
 position.orientation = zeros(noOfNodes,1);
 
-save ../output/groundTruth_alligned_1m.mat position
+save ../output/groundTruth_alligned_12m.mat position
 
 position.orientation = pi*ones(noOfNodes,1);
 position.orientation(1) = 0; %central node is always at orientation 0
 
-save ../output/groundTruth_allignedInv_1m.mat position
+save ../output/groundTruth_allignedInv_12m.mat position
 
+%16/05/2017
+% position.orientation = [0;
+%                         2*pi*(0/8);
+%                         2*pi*(1/8);
+%                         2*pi*(2/8);
+%                         2*pi*(3/8);
+%                         2*pi*(4/8);
+%                         2*pi*(5/8);
+%                         2*pi*(6/8);
+%                         2*pi*(7/8);
+%                         ];     
+%23/05/2017
 position.orientation = [0;
                         2*pi*(6/8);
-                        2*pi*(1/8);
+                        2*pi*(7/8);
                         2*pi*(0/8);
                         2*pi*(1/8);
                         2*pi*(2/8);
                         2*pi*(3/8);
                         2*pi*(4/8);
                         2*pi*(5/8);
-                        ];                        
+                        ];   
+                   
 
-save ../output/groundTruth_radialInt_1m.mat position
+save ../output/groundTruth_radialInt_12m.mat position
 
+%16/05/2017
+% position.orientation = [0;
+%                         2*pi*(4/8);
+%                         2*pi*(5/8);
+%                         2*pi*(6/8);
+%                         2*pi*(7/8);
+%                         2*pi*(0/8);
+%                         2*pi*(1/8);
+%                         2*pi*(2/8);
+%                         2*pi*(3/8);
+%                         ];
+%23/05/2017
 position.orientation = [0;
                         2*pi*(2/8);
                         2*pi*(3/8);
@@ -49,7 +87,7 @@ position.orientation = [0;
                         2*pi*(1/8);
                         ];
 
-save ../output/groundTruth_radialExt_1m.mat position
+save ../output/groundTruth_radialExt_12m.mat position
 
 
 
